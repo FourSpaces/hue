@@ -56,6 +56,7 @@ from desktop.lib.export_csvxls import file_reader
 from desktop.lib.exceptions_renderable import PopupException
 from desktop.lib.fs import splitpath
 from desktop.lib.i18n import smart_str
+from desktop.lib.paths import SAFE_CHARACTERS_URI_COMPONENTS
 from desktop.lib.tasks.compress_files.compress_utils import compress_files_in_hdfs
 from desktop.lib.tasks.extract_archive.extract_utils import extract_archive_in_hdfs
 from desktop.views import serve_403_error
@@ -328,7 +329,7 @@ def parse_breadcrumbs(path):
       if url and not url.endswith('/'):
         url += '/'
       url += part
-      breadcrumbs.append({'url': urllib.quote(url.encode('utf-8'), safe='~@#$&()*!+=:;,.?/\''), 'label': part})
+      breadcrumbs.append({'url': urllib.quote(url.encode('utf-8'), safe=SAFE_CHARACTERS_URI_COMPONENTS), 'label': part})
     return breadcrumbs
 
 
@@ -353,8 +354,8 @@ def listdir(request, path):
         'path': path,
         'file_filter': file_filter,
         'breadcrumbs': breadcrumbs,
-        'current_dir_path': urllib.quote(path.encode('utf-8'), safe='~@#$&()*!+=:;,.?/\''),
-        'current_request_path': urllib.quote(request.path.encode('utf-8'), safe='~@#$&()*!+=:;,.?/\''),
+        'current_dir_path': urllib.quote(path.encode('utf-8'), safe=SAFE_CHARACTERS_URI_COMPONENTS),
+        'current_request_path': request.path[:request.path.find(path)] + urllib.quote(path.encode('utf-8'), safe=SAFE_CHARACTERS_URI_COMPONENTS),
         'home_directory': home_dir_path if home_dir_path and request.fs.isdir(home_dir_path) else None,
         'cwd_set': True,
         'is_superuser': request.user.username == request.fs.superuser,
@@ -497,7 +498,7 @@ def listdir_paged(request, path):
     data = {
         'path': path,
         'breadcrumbs': breadcrumbs,
-        'current_request_path': urllib.quote(request.path.encode('utf-8'), safe='~@#$&()*!+=:;,.?/\''),
+        'current_request_path': request.path[:request.path.find(path)] + urllib.quote(path.encode('utf-8'), safe=SAFE_CHARACTERS_URI_COMPONENTS),
         'is_trash_enabled': is_trash_enabled,
         'files': page.object_list if page else [],
         'page': _massage_page(page, paginator) if page else {},
@@ -507,7 +508,7 @@ def listdir_paged(request, path):
         # The following should probably be deprecated
         'cwd_set': True,
         'file_filter': 'any',
-        'current_dir_path': urllib.quote(path.encode('utf-8'), safe='~@#$&()*!+=:;,.?/\''),
+        'current_dir_path': urllib.quote(path.encode('utf-8'), safe=SAFE_CHARACTERS_URI_COMPONENTS),
         'is_fs_superuser': is_fs_superuser,
         'groups': is_fs_superuser and [str(x) for x in Group.objects.values_list('name', flat=True)] or [],
         'users': is_fs_superuser and [str(x) for x in User.objects.values_list('username', flat=True)] or [],
